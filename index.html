@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudyCore - Ask Your Notes | World Student Toolkit</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Inter,system-ui,sans-serif}
+body{background:#0a0a0f;color:#fff;min-height:100vh}
+header{padding:20px;text-align:center;border-bottom:1px solid #222}
+h1{font-size:28px;font-weight:800;background:linear-gradient(90deg,#8b5cf6,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sub{color:#888;margin-top:6px;font-size:14px}
+.container{max-width:1100px;margin:auto;padding:20px;display:grid;grid-template-columns:1fr;gap:20px}
+@media(min-width:900px){.container{grid-template-columns:300px 1fr}}
+.sidebar{background:#15151c;border-radius:16px;padding:14px;height:fit-content;position:sticky;top:20px}
+.tool-btn{width:100%;padding:12px 14px;border-radius:10px;border:1px solid #222;background:#1c1c25;color:#aaa;text-align:left;margin-bottom:8px;cursor:pointer;font-weight:600}
+.tool-btn.active{background:#8b5cf6;color:#fff;border-color:#8b5cf6}
+.main{background:#15151c;border-radius:16px;padding:20px;min-height:600px}
+.drop{border:2px dashed #333;border-radius:14px;padding:30px;text-align:center;color:#666;cursor:pointer}
+.drop:hover{border-color:#8b5cf6;color:#fff}
+textarea{width:100%;min-height:140px;background:#0f0f14;border:1px solid #2a2a35;border-radius:10px;color:#fff;padding:12px;resize:vertical}
+.btn{padding:10px 18px;border-radius:10px;border:0;font-weight:700;cursor:pointer}
+.btn-primary{background:#8b5cf6;color:#fff}
+.card{background:#0f0f14;border:1px solid #222;border-radius:12px;padding:14px;margin-top:12px}
+.flash{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:12px}
+.fc{background:#1f1f2b;border-radius:12px;padding:16px;cursor:pointer;min-height:120px;display:flex;align-items:center;justify-content:center;text-align:center;transition:.2s}
+.q{margin-top:10px;padding:12px;background:#1a1a25;border-radius:10px}
+input,select{width:100%;padding:10px;border-radius:8px;background:#0f0f14;border:1px solid #2a2a35;color:#fff;margin-top:6px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+</style>
+</head>
+<body>
+<header>
+<h1>StudyCore Ultimate</h1>
+<div class="sub">Upload notes → Summary • Flashcards • Quiz • Ask Anything + Final Grade, GPA, Bunk, Citation. 100% Free.</div>
+</header>
+<div class="container">
+<div class="sidebar">
+<button class="tool-btn active" onclick="showTool('ai')">🔥 AI Study Kit</button>
+<button class="tool-btn" onclick="showTool('final')">🎯 Final Grade</button>
+<button class="tool-btn" onclick="showTool('gpa')">📊 GPA / CGPA</button>
+<button class="tool-btn" onclick="showTool('bunk')">🏫 Bunk Calc</button>
+<button class="tool-btn" onclick="showTool('cite')">📚 Citation</button>
+<button class="tool-btn" onclick="showTool('word')">📝 Word Counter</button>
+</div>
+<div class="main">
+<div id="tool-ai">
+<div class="drop" onclick="document.getElementById('pdfFile').click()">
+📄 Click to Upload PDF / Image of Notes
+<input type="file" id="pdfFile" hidden accept=".pdf,image/*" onchange="handleFile(this.files[0])">
+</div>
+<textarea id="textInput" placeholder="Or paste your lecture text here..."></textarea>
+<button class="btn btn-primary" style="margin-top:10px;width:100%" onclick="processText()">⚡ Generate All</button>
+<div id="aiResults" style="display:none">
+<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+<button class="btn" style="background:#222;color:#fff" onclick="tab('summary')">Summary</button>
+<button class="btn" style="background:#222;color:#fff" onclick="tab('flash')">Flashcards</button>
+<button class="btn" style="background:#222;color:#fff" onclick="tab('quiz')">Quiz</button>
+</div>
+<div id="tab-summary" class="card"></div>
+<div id="tab-flash" class="flash" style="display:none"></div>
+<div id="tab-quiz" style="display:none"></div>
+<div class="card" style="margin-top:20px">
+<b>💬 Ask Anything From Your Notes</b>
+<div style="display:flex;gap:8px;margin-top:10px"><input id="qInput" placeholder="e.g. What is photosynthesis?"><button class="btn btn-primary" onclick="askQ()">Ask</button></div>
+<div id="qAns" style="margin-top:10px;color:#aaa"></div>
+</div>
+</div>
+</div>
+<div id="tool-final" style="display:none">
+<h3>Final Exam Calculator</h3>
+<div class="row" style="margin-top:12px"><div>Current %<input id="cur" type="number" value="78"></div><div>Want %<input id="want" type="number" value="85"></div></div>
+Final Worth %<input id="worth" type="number" value="30">
+<button class="btn btn-primary" style="margin-top:12px" onclick="calcFinal()">Calculate</button>
+<div id="finalOut" class="card"></div>
+</div>
+<div id="tool-gpa" style="display:none">
+<h3>GPA Calculator</h3>
+<textarea id="gpaInput" placeholder="Enter like: 8,9,7,8.5"></textarea>
+<button class="btn btn-primary" style="margin-top:10px" onclick="calcGpa()">Calculate</button>
+<div id="gpaOut" class="card"></div>
+</div>
+<div id="tool-bunk" style="display:none">
+<h3>Bunk Calculator</h3>
+<div class="row"><div>Total<input id="tot" type="number" value="40"></div><div>Attended<input id="att" type="number" value="32"></div></div>
+Required %<input id="req" type="number" value="75">
+<button class="btn btn-primary" style="margin-top:10px" onclick="calcBunk()">Calculate</button>
+<div id="bunkOut" class="card"></div>
+</div>
+<div id="tool-cite" style="display:none">
+<h3>Citation Generator</h3>
+<input id="cTitle" placeholder="Title"><div class="row" style="margin-top:8px"><div><input id="cAuthor" placeholder="Author"></div><div><input id="cYear" placeholder="Year"></div></div>
+<select id="cStyle"><option value="apa">APA</option><option value="mla">MLA</option></select>
+<button class="btn btn-primary" style="margin-top:10px" onclick="genCite()">Generate</button>
+<div id="citeOut" class="card"></div>
+</div>
+<div id="tool-word" style="display:none">
+<h3>Word Counter</h3>
+<textarea id="wordIn" placeholder="Paste essay..."></textarea>
+<div id="wordOut" class="card">Words: 0</div>
+</div>
+</div>
+</div>
+<script>
+let fullText="";
+function showTool(t){document.querySelectorAll('[id^=tool-]').forEach(e=>e.style.display='none');document.getElementById('tool-'+t).style.display='block';document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));event.target.classList.add('active');}
+function tab(n){document.getElementById('tab-summary').style.display=n=='summary'?'block':'none';document.getElementById('tab-flash').style.display=n=='flash'?'grid':'none';document.getElementById('tab-quiz').style.display=n=='quiz'?'block':'none';}
+async function handleFile(f){if(!f)return;if(f.type.includes('pdf')){const buf=await f.arrayBuffer();pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';const pdf=await pdfjsLib.getDocument(buf).promise;let txt="";for(let i=1;i<=pdf.numPages;i++){let p=await pdf.getPage(i);let c=await p.getTextContent();txt+=c.items.map(x=>x.str).join(' ')+"\n";}document.getElementById('textInput').value=txt;}else{const {data:{text}}=await Tesseract.recognize(f,'eng');document.getElementById('textInput').value=text;}}
+function processText(){fullText=document.getElementById('textInput').value.trim();if(fullText.length<20){alert('Paste more text');return;}document.getElementById('aiResults').style.display='block';let sents=fullText.split(/[.!?]+/).filter(s=>s.trim().length>20);document.getElementById('tab-summary').innerHTML='<b>Summary</b><br><br>'+sents.slice(0,5).join('. ');let fH='';sents.slice(0,8).forEach(p=>{let w=p.trim().split(' ');if(w.length<6)return;let mid=Math.floor(w.length/2);let q=w.slice(0,mid).join(' ')+'...?';fH+=`<div class=fc onclick="this.innerHTML=this.innerHTML.includes('Q:')?'<b>A:</b> ${p.trim()}':'<b>Q:</b> ${q}'"><b>Q:</b> ${q}</div>`;});document.getElementById('tab-flash').innerHTML=fH;let qH='';sents.slice(0,5).forEach((s,i)=>{let w=s.split(' ').filter(x=>x.length>4);if(!w[0])return;let ans=w[0];let q=s.replace(ans,'______');qH+=`<div class=q><b>Q${i+1}:</b> ${q}<br><button class=btn style="background:#222;color:#fff;margin-top:6px" onclick="alert('Answer: ${ans}')">${ans}</button></div>`;});document.getElementById('tab-quiz').innerHTML=qH;tab('summary');}
+function askQ(){let q=document.getElementById('qInput').value.toLowerCase();if(!q||!fullText){document.getElementById('qAns').innerText='Upload notes first';return;}let sents=fullText.split(/[.!?]+/);let best=sents.filter(s=>q.split(' ').some(word=>s.toLowerCase().includes(word)&&word.length>3)).slice(0,3).join('. ')||"Not found, try rephrase";document.getElementById('qAns').innerHTML='<b>Answer from notes:</b><br>'+best;}
+function calcFinal(){let cur=parseFloat(document.getElementById('cur').value),want=parseFloat(document.getElementById('want').value),worth=parseFloat(document.getElementById('worth').value)/100;let need=(want-cur*(1-worth))/worth;document.getElementById('finalOut').innerHTML=`Need <b>${need.toFixed(1)}%</b> on final`;}
+function calcGpa(){let nums=document.getElementById('gpaInput').value.match(/[\d.]+/g)?.map(Number)||[];let avg=nums.reduce((a,b)=>a+b,0)/nums.length;document.getElementById('gpaOut').innerHTML=`GPA: <b>${avg.toFixed(2)}</b>`;}
+function calcBunk(){let tot=+document.getElementById('tot').value,att=+document.getElementById('att').value,req=+document.getElementById('req').value;let canBunk=Math.floor(att/(req/100)-tot);document.getElementById('bunkOut').innerHTML=canBunk<0?`Need to attend <b>${Math.abs(canBunk)}</b> more`:`Can bunk <b>${canBunk}</b> more`;}
+function genCite(){let t=document.getElementById('cTitle').value,a=document.getElementById('cAuthor').value,y=document.getElementById('cYear').value,s=document.getElementById('cStyle').value;document.getElementById('citeOut').innerText=s=='apa'?`${a} (${y}). ${t}.`:`${a}. "${t}." ${y}.`;}
+document.getElementById('wordIn').addEventListener('input',e=>{let txt=e.target.value;let w=txt.trim()?txt.trim().split(/\s+/).length:0;document.getElementById('wordOut').innerText=`Words: ${w} | Chars: ${txt.length}`;});
+</script>
+</body>
+</html>
